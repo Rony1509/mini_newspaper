@@ -1,0 +1,176 @@
+<div class="shell">
+
+  <!-- ── Newspaper Masthead ── -->
+  <div class="newspaper-header">
+    <div class="masthead">
+      <h1 class="newspaper-title">THE DAILY POST</h1>
+      <p class="tagline">Your Source for News & Stories</p>
+      <p class="date">{{ today | date:'EEEE, MMMM d, y' }}</p>
+    </div>
+  </div>
+
+  <!-- ── Navigation Bar ── -->
+  <header class="header">
+    <div class="header-left">
+      <button class="btn-new" (click)="openCreate()">
+        <span class="btn-plus">+</span> Publish
+      </button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Search articles…"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="applySearch()"
+      />
+      @if (searchQuery) {
+        <button class="search-clear" (click)="searchQuery=''; applySearch()">×</button>
+      }
+    </div>
+    <span class="post-count">{{ posts.length }} article{{ posts.length !== 1 ? 's' : '' }}</span>
+  </header>
+
+  <!-- ── Toast Notifications ── -->
+  <div class="toast-container">
+    @for (t of toasts; track trackByToast($index, t)) {
+      <div class="toast" [class.toast-success]="t.type==='success'" [class.toast-error]="t.type==='error'">
+        <span class="toast-icon">{{ t.type === 'success' ? '✓' : '✕' }}</span>
+        {{ t.message }}
+        <button class="toast-close" (click)="removeToast(t.id)">×</button>
+      </div>
+    }
+  </div>
+
+  <!-- ── Create / Edit Form Modal ── -->
+  @if (showForm) {
+    <div class="modal-backdrop" (click)="cancelForm()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">{{ editingId ? 'Edit Article' : 'Write New Article' }}</h2>
+          <button class="modal-close" (click)="cancelForm()">×</button>
+        </div>
+        <div class="modal-body">
+          <label class="field-label">Headline</label>
+          <input
+            class="field-input"
+            type="text"
+            placeholder="Article headline…"
+            [(ngModel)]="formTitle"
+          />
+          <label class="field-label">Story</label>
+          <textarea
+            class="field-textarea"
+            placeholder="Write your story content…"
+            [(ngModel)]="formBody"
+            rows="8"
+          ></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="cancelForm()">Discard</button>
+          <button class="btn-submit" (click)="submitForm()" [disabled]="formLoading">
+            @if (formLoading) { <span class="spinner"></span> }
+            {{ editingId ? 'Update' : 'Publish' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Loading ── -->
+  @if (loading) {
+    <div class="loading-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="skeleton-card">
+          <div class="sk sk-title"></div>
+          <div class="sk sk-body"></div>
+          <div class="sk sk-body short"></div>
+          <div class="sk sk-meta"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Posts Grid ── -->
+  @if (!loading) {
+    @if (displayed.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📰</div>
+        <p class="empty-title">No Articles</p>
+        <p class="empty-sub">{{ searchQuery ? 'Try a different search term' : 'Start by publishing your first article' }}</p>
+        @if (!searchQuery) {
+          <button class="btn-new" style="margin-top:2rem" (click)="openCreate()">+ Publish Article</button>
+        }
+      </div>
+    } @else {
+      <div class="posts-grid">
+        <!-- Featured Article -->
+        @if (displayed.length > 0) {
+          <article class="post-card post-featured">
+            <div class="featured-label">FEATURED</div>
+            <div class="post-card-top">
+              <div class="badges">
+                @if (displayed[0].isNew) {
+                  <span class="badge badge-new">NEW</span>
+                }
+              </div>
+              <div class="post-actions">
+                <button class="icon-btn edit-btn" title="Edit" (click)="openEdit(displayed[0])">✎</button>
+                <button class="icon-btn del-btn"  title="Delete" (click)="deletePost(displayed[0])">⌫</button>
+              </div>
+            </div>
+            <h2 class="post-title featured-title">{{ displayed[0].title }}</h2>
+            <p class="post-body featured-body">{{ displayed[0].body }}</p>
+            <div class="post-meta">
+              @if (displayed[0].createdAt) {
+                <span class="meta-date">{{ displayed[0].createdAt | date:'MMM d, y' }}</span>
+              }
+              <span class="meta-id">By Editor</span>
+            </div>
+          </article>
+        }
+
+        <!-- Other Articles -->
+        @if (displayed.length > 1) {
+          @for (post of displayed.slice(1); track trackByPost($index + 1, post)) {
+            <article class="post-card">
+              <div class="post-card-top">
+                <div class="badges">
+                  @if (post.isNew) {
+                    <span class="badge badge-new">NEW</span>
+                  }
+                  @if (post.isUpdated) {
+                    <span class="badge badge-updated">UPDATED</span>
+                  }
+                </div>
+                <div class="post-actions">
+                  <button class="icon-btn edit-btn" title="Edit" (click)="openEdit(post)">✎</button>
+                  <button class="icon-btn del-btn"  title="Delete" (click)="deletePost(post)">⌫</button>
+                </div>
+              </div>
+              <h3 class="post-title">{{ post.title }}</h3>
+              <p class="post-body">{{ post.body }}</p>
+              <div class="post-meta">
+                <span class="meta-category">STORY</span>
+                @if (post.createdAt) {
+                  <span class="meta-date">{{ post.createdAt | date:'MMM d' }}</span>
+                }
+              </div>
+            </article>
+          }
+        }
+      </div>
+
+      @if (hasMore) {
+        <div class="load-more-row">
+          <button class="btn-load-more" (click)="loadMore()">
+            LOAD MORE ARTICLES <span class="load-arrow">↓</span>
+          </button>
+          <span class="load-hint">{{ displayed.length }} of {{ posts.length }}</span>
+        </div>
+      }
+    }
+  }
+
+</div>

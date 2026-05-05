@@ -26,9 +26,28 @@ router.get('/:id', async (req, res) => {
 // POST /api/posts — create
 router.post('/', async (req, res) => {
   try {
-    const { title, body, userId } = req.body;
+    const { title, body, userId, category } = req.body;
     if (!title || !body) return res.status(400).json({ message: 'title and body are required' });
-    const post = await Post.create({ title, body, userId });
+    const post = await Post.create({ title, body, userId, category });
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// POST /api/posts/:id/comments — add comment to a post
+router.post('/:id/comments', async (req, res) => {
+  try {
+    const { name, text } = req.body;
+    if (!name || !text) return res.status(400).json({ message: 'name and text are required' });
+
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    post.comments = post.comments || [];
+    post.comments.push({ name, text });
+    await post.save();
+
     res.status(201).json(post);
   } catch (err) {
     res.status(400).json({ message: err.message });

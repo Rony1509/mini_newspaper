@@ -32,6 +32,13 @@
     <span class="post-count">{{ posts.length }} article{{ posts.length !== 1 ? 's' : '' }}</span>
   </header>
 
+  @if (currentCategory !== 'all') {
+    <section class="category-banner">
+      <div class="category-label">{{ categoryLabel }}</div>
+      <p class="category-copy">{{ categoryDescription }}</p>
+    </section>
+  }
+
   <!-- ── Toast Notifications ── -->
   <div class="toast-container">
     @for (t of toasts; track trackByToast($index, t)) {
@@ -66,6 +73,12 @@
             [(ngModel)]="formBody"
             rows="8"
           ></textarea>
+          <label class="field-label">Category</label>
+          <select class="field-select" [(ngModel)]="formCategory">
+            <option value="sports">Sports</option>
+            <option value="politics">Politics</option>
+            <option value="entertainment">Entertainment</option>
+          </select>
         </div>
         <div class="modal-footer">
           <button class="btn-cancel" (click)="cancelForm()">Discard</button>
@@ -123,10 +136,46 @@
             <h2 class="post-title featured-title">{{ displayed[0].title }}</h2>
             <p class="post-body featured-body">{{ displayed[0].body }}</p>
             <div class="post-meta">
+              <span class="meta-category">{{ displayed[0].category?.toUpperCase() || 'STORY' }}</span>
               @if (displayed[0].createdAt) {
                 <span class="meta-date">{{ displayed[0].createdAt | date:'MMM d, y' }}</span>
               }
               <span class="meta-id">By Editor</span>
+            </div>
+            <div class="comments-block">
+              <div class="comments-header">
+                <span>{{ displayed[0].comments?.length || 0 }} comment{{ (displayed[0].comments?.length || 0) === 1 ? '' : 's' }}</span>
+              </div>
+              @if (displayed[0].comments?.length) {
+                @for (comment of displayed[0].comments; track trackByIndex($index)) {
+                  <div class="comment-item">
+                    <div class="comment-meta">
+                      <span class="comment-name">{{ comment.name }}</span>
+                      @if (comment.createdAt) {
+                        <span class="comment-date">{{ comment.createdAt | date:'MMM d' }}</span>
+                      }
+                    </div>
+                    <p class="comment-text">{{ comment.text }}</p>
+                  </div>
+                }
+              }
+              <div class="comment-form">
+                <input
+                  class="field-input"
+                  type="text"
+                  placeholder="Your name"
+                  [(ngModel)]="newCommentName[displayed[0]._id!]"
+                />
+                <textarea
+                  class="field-textarea"
+                  rows="3"
+                  placeholder="Write a comment..."
+                  [(ngModel)]="newCommentText[displayed[0]._id!]"
+                ></textarea>
+                <button class="btn-comment" (click)="submitComment(displayed[0])" [disabled]="commentLoading[displayed[0]._id!]">
+                  Post Comment
+                </button>
+              </div>
             </div>
           </article>
         }
@@ -152,10 +201,45 @@
               <h3 class="post-title">{{ post.title }}</h3>
               <p class="post-body">{{ post.body }}</p>
               <div class="post-meta">
-                <span class="meta-category">STORY</span>
+                <span class="meta-category">{{ post.category?.toUpperCase() || 'STORY' }}</span>
                 @if (post.createdAt) {
                   <span class="meta-date">{{ post.createdAt | date:'MMM d' }}</span>
                 }
+              </div>
+              <div class="comments-block">
+                <div class="comments-header">
+                  <span>{{ post.comments?.length || 0 }} comment{{ (post.comments?.length || 0) === 1 ? '' : 's' }}</span>
+                </div>
+                @if (post.comments?.length) {
+                  @for (comment of post.comments; track trackByIndex($index)) {
+                    <div class="comment-item">
+                      <div class="comment-meta">
+                        <span class="comment-name">{{ comment.name }}</span>
+                        @if (comment.createdAt) {
+                          <span class="comment-date">{{ comment.createdAt | date:'MMM d' }}</span>
+                        }
+                      </div>
+                      <p class="comment-text">{{ comment.text }}</p>
+                    </div>
+                  }
+                }
+                <div class="comment-form">
+                  <input
+                    class="field-input"
+                    type="text"
+                    placeholder="Your name"
+                    [(ngModel)]="newCommentName[post._id!]"
+                  />
+                  <textarea
+                    class="field-textarea"
+                    rows="3"
+                    placeholder="Write a comment..."
+                    [(ngModel)]="newCommentText[post._id!]"
+                  ></textarea>
+                  <button class="btn-comment" (click)="submitComment(post)" [disabled]="commentLoading[post._id!]">
+                    Post Comment
+                  </button>
+                </div>
               </div>
             </article>
           }
